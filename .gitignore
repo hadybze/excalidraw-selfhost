@@ -27,3 +27,6 @@ dev-dist
 html
 meta*.json
 .claude
+
+# oauth2-proxy real secrets (never commit)
+deploy/oauth2-proxy.env
