@@ -1,0 +1,70 @@
+services:
+  excalidraw-frontend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.excalidraw.entrypoints=websecure"
+      - "traefik.http.routers.excalidraw.rule=Host(`excalidraw.bizelevateai.com`)"
+      - "traefik.http.routers.excalidraw.tls=true"
+      - "traefik.http.routers.excalidraw.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.excalidraw.loadbalancer.server.port=80"
+    networks:
+      - root_default
+    restart: unless-stopped
+
+  excalidraw-room:
+    image: excalidraw/excalidraw-room:latest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.excalidraw-collab.entrypoints=websecure"
+      - "traefik.http.routers.excalidraw-collab.rule=Host(`excalidraw-collab.bizelevateai.com`)"
+      - "traefik.http.routers.excalidraw-collab.tls=true"
+      - "traefik.http.routers.excalidraw-collab.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.excalidraw-collab.loadbalancer.server.port=80"
+    networks:
+      - root_default
+    restart: unless-stopped
+
+  excalidraw-storage:
+    image: alswl/excalidraw-storage-backend:v2023.11.11
+    environment:
+      PORT: "8080"
+      GLOBAL_PREFIX: /api/v2
+      STORAGE_URI: redis://redis:6379
+      BODY_LIMIT: 50mb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.excalidraw-storage.entrypoints=websecure"
+      - "traefik.http.routers.excalidraw-storage.rule=Host(`excalidraw-storage.bizelevateai.com`)"
+      - "traefik.http.routers.excalidraw-storage.tls=true"
+      - "traefik.http.routers.excalidraw-storage.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.excalidraw-storage.middlewares=excalidraw-storage-cors"
+      - "traefik.http.middlewares.excalidraw-storage-cors.headers.accesscontrolalloworiginlist=https://excalidraw.bizelevateai.com"
+      - "traefik.http.middlewares.excalidraw-storage-cors.headers.accesscontrolallowmethods=GET,POST,PUT,OPTIONS"
+      - "traefik.http.middlewares.excalidraw-storage-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.excalidraw-storage-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.excalidraw-storage-cors.headers.addvaryheader=true"
+      - "traefik.http.services.excalidraw-storage.loadbalancer.server.port=8080"
+    networks:
+      - root_default
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - root_default
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  root_default:
+    external: true
