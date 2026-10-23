@@ -1,3 +1,5 @@
+name: excalidraw
+
 services:
   # Frontend SPA. No longer exposed to Traefik directly — oauth2-proxy is the
   # public entrypoint for excalidraw.bizelevateai.com and proxies here only
@@ -18,7 +20,7 @@ services:
   # Unauthenticated browser requests get a native 302 to Google; authenticated
   # ones are proxied to excalidraw-frontend. /oauth2/* is handled internally.
   oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
     env_file:
       - ./oauth2-proxy.env
     environment:
@@ -46,7 +48,9 @@ services:
       - excalidraw-frontend
 
   excalidraw-room:
-    image: excalidraw/excalidraw-room:latest
+    image: excalidraw-room:2026.10.23-node24
+    build:
+      context: ./room
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.excalidraw-collab.entrypoints=websecure"
@@ -59,7 +63,9 @@ services:
     restart: unless-stopped
 
   excalidraw-storage:
-    image: alswl/excalidraw-storage-backend:v2023.11.11
+    image: excalidraw-storage:2026.10.23-node24
+    build:
+      context: ./storage
     environment:
       PORT: "8080"
       GLOBAL_PREFIX: /api/v2
@@ -95,6 +101,7 @@ services:
 
 volumes:
   redis-data:
+    name: deploy_redis-data
 
 networks:
   root_default:

@@ -11,6 +11,15 @@ This is BizElevate's private fork of [excalidraw/excalidraw](https://github.com/
 - **Firebase replaced by self-hosted HTTP storage.** The frontend adapter in `excalidraw-app/data/httpStorage.ts` points at `alswl/excalidraw-storage-backend` (Redis-backed) instead of Firebase. Encrypted blobs are still client-side AES-GCM; the backend is a dumb KV store.
 - **Google sign-in via oauth2-proxy.** The public host `excalidraw.bizelevateai.com` is proxied through oauth2-proxy before the SPA is served. Collab and storage hosts are not gated because they only see encrypted blobs tied to room keys in URL fragments.
 
+## Room and storage images (Node 24)
+
+The collab room and storage backend are built from pinned upstream commits, not pulled as images.
+
+- `deploy/room/` builds `excalidraw/excalidraw-room`, `deploy/storage/` builds `alswl/excalidraw-storage-backend`. Each has a Dockerfile (upstream commit in an ARG) plus its own `package.json` and `package-lock.json` that replace upstream's. Upstream `src/` is not patched.
+- Images are tagged `excalidraw-room:<date>-node24` and `excalidraw-storage:<date>-node24` in `deploy/docker-compose.yml`. To upgrade, bump the commit ARG, refresh the lockfile on Node 24, change the tag, then `docker compose build` and `up -d` for those two services (VPS deploy lock applies).
+- `deploy/room/smoke.cjs` joins two clients to a room and checks a broadcast arrives: `node smoke.cjs http://127.0.0.1:<port>`.
+- Do not run `redis-cli FLUSHALL`. Back up with `redis-cli SAVE` and copy the volume dump first.
+
 ## Deploy target
 
 Run `deploy/docker-compose.yml` on the BizElevate VPS (external Traefik network `root_default`). Public hosts:

@@ -30,3 +30,7 @@ meta*.json
 
 # oauth2-proxy real secrets (never commit)
 deploy/oauth2-proxy.env
+
+# Pinned lockfiles for the self-hosted room and storage images
+!deploy/room/package-lock.json
+!deploy/storage/package-lock.json
