@@ -1,0 +1,32 @@
+# VPS1 Caddy blocks for the Excalidraw hosts after they move to the Mac mini (BZ-289).
+# Add to the VPS1 Caddyfile at cutover only (needs dns-caddy.lock), then reload Caddy.
+# Replaces the Traefik CORS middleware that VPS2 used for the storage host.
+excalidraw.bizelevateai.com {
+	reverse_proxy 100.82.160.99:18221
+}
+
+# websocket room: never buffer, flush every write
+excalidraw-collab.bizelevateai.com {
+	reverse_proxy 100.82.160.99:18222 {
+		flush_interval -1
+	}
+}
+
+excalidraw-storage.bizelevateai.com {
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Origin https://excalidraw.bizelevateai.com
+		header Access-Control-Allow-Methods "GET,POST,PUT,OPTIONS"
+		header Access-Control-Allow-Headers "*"
+		header Access-Control-Max-Age 100
+		header Vary Origin
+		respond 204
+	}
+	handle {
+		header Access-Control-Allow-Origin https://excalidraw.bizelevateai.com
+		header Vary Origin
+		reverse_proxy 100.82.160.99:18223
+	}
+}
+# After reload: curl -si -X OPTIONS -H 'Origin: https://excalidraw.bizelevateai.com' https://excalidraw-storage.bizelevateai.com/ | grep -ic access-control-allow-origin
+# must print 1 (a doubled header means the storage app also adds CORS; then drop the second `header` line above).

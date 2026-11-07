@@ -22,7 +22,11 @@ The collab room and storage backend are built from pinned upstream commits, not 
 
 ## Deploy target
 
-Since 7 Nov 2026 (BZ-289) the stack runs on the Mac mini from `deploy/docker-compose.mini.yml` (VPS2 is being retired). Public hosts are unchanged; VPS1 Caddy forwards them over Tailscale to the mini (ports 18221 sign-in proxy, 18222 room, 18223 storage). The SPA is the static build that ran on VPS2 (`deploy/mini/Dockerfile.frontend-static`, files in `deploy/mini/html`, not in Git). Secrets: `secret.py render excalidraw`. `deploy/docker-compose.yml` is the old VPS2 layout (external Traefik network `root_default`), kept for reference. Public hosts:
+The stack is moving from VPS2 to the Mac mini (BZ-289, VPS2 is being retired). Until the cutover is done it still runs on VPS2 from `deploy/docker-compose.yml` (external Traefik network `root_default`). `deploy/docker-compose.mini.yml` is the mini layout: ports 18221 sign-in proxy, 18222 room, 18223 storage, bound to 127.0.0.1 and the tailnet address only. After cutover VPS1 Caddy forwards the public hosts to the mini over Tailscale using `deploy/Caddyfile.mini` (storage CORS, room `flush_interval -1`). The SPA is the static build that ran on VPS2 (`deploy/mini/Dockerfile.frontend-static`, files in `deploy/mini/html`, not in Git, copy on KIOXIA). Secrets: `secret.py render excalidraw` writes `deploy/env/` (gitignored).
+
+Rollback, in order: (1) on the mini `docker compose -f docker-compose.mini.yml stop`; (2) on VPS2 `docker start` the 5 containers in `/root/dev/bizelevate/excalidraw/deploy` (check their restart policy with `docker inspect` first); (3) set the DNS A records for `excalidraw`, `excalidraw-collab` and `excalidraw-storage` back to the VPS2 address and remove the Excalidraw blocks from the VPS1 Caddyfile (under `dns-caddy.lock`). The redis volume on VPS2 is kept; the final copy is on KIOXIA `excalidraw-vps2-20261107/`.
+
+Public hosts:
 
 - `excalidraw.bizelevateai.com` — oauth2-proxied SPA
 - `excalidraw-collab.bizelevateai.com` — excalidraw-room
