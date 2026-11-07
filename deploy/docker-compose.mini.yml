@@ -1,0 +1,76 @@
+# BizElevate self-hosted Excalidraw on the Mac mini (moved from VPS2, 7 Nov 2026, BZ-289).
+# Same public hosts as before; VPS1 Caddy forwards them over Tailscale to the mini's tailnet address:
+#   excalidraw.bizelevateai.com          -> 100.82.160.99:18221 (oauth2-proxy, Google sign-in)
+#   excalidraw-collab.bizelevateai.com   -> 100.82.160.99:18222 (room, websocket)
+#   excalidraw-storage.bizelevateai.com  -> 100.82.160.99:18223 (storage; CORS headers are added by Caddy)
+# Secrets: `secret.py render excalidraw` writes env/oauth2-proxy.env (never edit by hand).
+name: excalidraw
+
+services:
+  excalidraw-frontend:
+    build:
+      context: ./mini
+      dockerfile: Dockerfile.frontend-static
+    image: excalidraw-frontend-static:20261107
+    expose: ["80"]
+    mem_limit: 64m
+    restart: unless-stopped
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+    env_file: ["${EXCALIDRAW_OAUTH_ENV:-./env/oauth2-proxy.env}"]
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      OAUTH2_PROXY_EMAIL_DOMAINS: bizelevate.net
+      OAUTH2_PROXY_REDIRECT_URL: https://excalidraw.bizelevateai.com/oauth2/callback
+      OAUTH2_PROXY_COOKIE_DOMAINS: excalidraw.bizelevateai.com
+      OAUTH2_PROXY_WHITELIST_DOMAINS: excalidraw.bizelevateai.com
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      OAUTH2_PROXY_UPSTREAMS: http://excalidraw-frontend:80
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+    ports:
+      - "127.0.0.1:18221:4180"
+      - "100.82.160.99:18221:4180"
+    mem_limit: 64m
+    restart: unless-stopped
+    depends_on: [excalidraw-frontend]
+
+  excalidraw-room:
+    image: excalidraw-room:2026.10.23-node24
+    build:
+      context: ./room
+    ports:
+      - "127.0.0.1:18222:80"
+      - "100.82.160.99:18222:80"
+    mem_limit: 128m
+    restart: unless-stopped
+
+  excalidraw-storage:
+    image: excalidraw-storage:2026.10.23-node24
+    build:
+      context: ./storage
+    environment:
+      PORT: "8080"
+      GLOBAL_PREFIX: /api/v2
+      STORAGE_URI: redis://redis:6379
+      BODY_LIMIT: 50mb
+    ports:
+      - "127.0.0.1:18223:8080"
+      - "100.82.160.99:18223:8080"
+    mem_limit: 192m
+    restart: unless-stopped
+    depends_on: [redis]
+
+  redis:
+    image: redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    mem_limit: 96m
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    name: deploy_redis-data

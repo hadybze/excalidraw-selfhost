@@ -1,0 +1,9 @@
+# Excalidraw SPA served as static files (mini deployment, 7 Nov 2026).
+# The files in ./html are the exact build that ran on VPS2, taken from its frontend image
+# (docker cp <container>:/usr/share/nginx/html). Rebuild from source with ../../Dockerfile
+# (needs about 3 GB) if the app code changes, then replace ./html with the new
+# /usr/share/nginx/html. The built files hold only public URLs, no secrets.
+# A fresh clone has no ./html (gitignored): copy it from /Volumes/KIOXIA/archive/excalidraw-vps2-20261107/ (static HTML tarball).
+FROM nginx:stable-alpine-slim@sha256:2c605dbeab79a6b2a63340474fe58119d0ef95bdc4b1f41df0aa689659b3d13b
+COPY html /usr/share/nginx/html
+HEALTHCHECK CMD wget -q -O /dev/null http://localhost || exit 1

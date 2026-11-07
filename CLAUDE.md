@@ -22,7 +22,11 @@ The collab room and storage backend are built from pinned upstream commits, not 
 
 ## Deploy target
 
-Run `deploy/docker-compose.yml` on the BizElevate VPS (external Traefik network `root_default`). Public hosts:
+The stack is moving from VPS2 to the Mac mini (BZ-289, VPS2 is being retired). Until the cutover is done it still runs on VPS2 from `deploy/docker-compose.yml` (external Traefik network `root_default`). `deploy/docker-compose.mini.yml` is the mini layout: ports 18221 sign-in proxy, 18222 room, 18223 storage, bound to 127.0.0.1 and the tailnet address only. After cutover VPS1 Caddy forwards the public hosts to the mini over Tailscale using `deploy/Caddyfile.mini` (storage CORS, room `flush_interval -1`). The SPA is the static build that ran on VPS2 (`deploy/mini/Dockerfile.frontend-static`, files in `deploy/mini/html`, not in Git, copy on KIOXIA). Secrets: `secret.py render excalidraw` writes `deploy/env/` (gitignored).
+
+Rollback, in order: (1) on the mini `docker compose -f docker-compose.mini.yml stop`; (2) on VPS2 `docker start` the 5 containers in `/root/dev/bizelevate/excalidraw/deploy` (check their restart policy with `docker inspect` first); (3) set the DNS A records for `excalidraw`, `excalidraw-collab` and `excalidraw-storage` back to the VPS2 address and remove only the 3 Excalidraw Caddy blocks from the VPS1 Caddyfile in place (under `dns-caddy.lock`; never restore a whole Caddyfile), then `caddy validate` and reload. The redis volume on VPS2 is kept, but drawings saved on the mini after cutover stay in the mini's redis volume (`deploy_redis-data`); copy them back first if they must survive the rollback. The final VPS2 copy is on KIOXIA `excalidraw-vps2-20261107/`.
+
+Public hosts:
 
 - `excalidraw.bizelevateai.com` — oauth2-proxied SPA
 - `excalidraw-collab.bizelevateai.com` — excalidraw-room
