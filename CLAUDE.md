@@ -22,7 +22,7 @@ The collab room and storage backend are built from pinned upstream commits, not 
 
 ## Deploy target
 
-Run `deploy/docker-compose.yml` on the BizElevate VPS (external Traefik network `root_default`). Public hosts:
+Since 7 Nov 2026 (BZ-289) the stack runs on the Mac mini from `deploy/docker-compose.mini.yml` (VPS2 is being retired). Public hosts are unchanged; VPS1 Caddy forwards them over Tailscale to the mini (ports 18221 sign-in proxy, 18222 room, 18223 storage). The SPA is the static build that ran on VPS2 (`deploy/mini/Dockerfile.frontend-static`, files in `deploy/mini/html`, not in Git). Secrets: `secret.py render excalidraw`. `deploy/docker-compose.yml` is the old VPS2 layout (external Traefik network `root_default`), kept for reference. Public hosts:
 
 - `excalidraw.bizelevateai.com` — oauth2-proxied SPA
 - `excalidraw-collab.bizelevateai.com` — excalidraw-room
