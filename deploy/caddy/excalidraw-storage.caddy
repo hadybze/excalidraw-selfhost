@@ -1,0 +1,24 @@
+# Excalidraw storage backend (encrypted scene, room and file blobs). Only the SPA origin may call it from a browser.
+# The app itself answers CORS with `*` (NestJS cors: true); Caddy answers preflight and replaces the app's
+# Access-Control-Allow-Origin so exactly one header with the SPA origin goes out. Body cap sits just above the app's 50 MB limit, so the app's own 413 is what people see.
+excalidraw-storage.bizelevateai.com {
+	import common
+	request_body {
+		max_size 51MiB
+	}
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Origin https://excalidraw.bizelevateai.com
+		header Access-Control-Allow-Methods "GET,POST,PUT,OPTIONS"
+		header Access-Control-Allow-Headers "*"
+		header Access-Control-Max-Age 100
+		header Vary Origin
+		respond 204
+	}
+	handle {
+		reverse_proxy excalidraw-storage:8080 {
+			header_down Access-Control-Allow-Origin https://excalidraw.bizelevateai.com
+			header_down Vary Origin
+		}
+	}
+}

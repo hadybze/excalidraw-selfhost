@@ -1,0 +1,104 @@
+# BizElevate self-hosted Excalidraw on VPS-contabo (replaces the VPS2 stack in docker-compose.yml).
+# No published ports. edge-caddy reaches the apps by container name on the external `edge` network:
+#   excalidraw.bizelevateai.com          -> excalidraw-oauth2-proxy:4180 (Google sign-in, then the SPA)
+#   excalidraw-collab.bizelevateai.com   -> excalidraw-room:80           (websocket)
+#   excalidraw-storage.bizelevateai.com  -> excalidraw-storage:8080      (CORS added by Caddy)
+# Site blocks: deploy/caddy/*.caddy. The SPA and Redis sit on the internal network only, so nothing on
+# `edge` reaches the SPA without passing the oauth2-proxy sign-in.
+# Secrets: env/oauth2-proxy.env (gitignored, rendered by the lead, never edited by hand).
+# Build and start: docker compose -f docker-compose.contabo.yml up -d --build
+name: excalidraw
+
+services:
+  excalidraw-frontend:
+    image: excalidraw-frontend:2026.11.09
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: excalidraw-frontend
+    expose: ["80"]
+    networks: [internal]
+    mem_limit: 64m
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  excalidraw-oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6@sha256:c3415e8660af553f5e18f5d90db050614c02493c0ac6260ac59442f6d9b12048
+    container_name: excalidraw-oauth2-proxy
+    # OAUTH2_PROXY_CLIENT_ID, OAUTH2_PROXY_CLIENT_SECRET, OAUTH2_PROXY_COOKIE_SECRET
+    env_file: ["${EXCALIDRAW_OAUTH_ENV:-./env/oauth2-proxy.env}"]
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      OAUTH2_PROXY_EMAIL_DOMAINS: bizelevate.net
+      OAUTH2_PROXY_REDIRECT_URL: https://excalidraw.bizelevateai.com/oauth2/callback
+      OAUTH2_PROXY_COOKIE_DOMAINS: excalidraw.bizelevateai.com
+      OAUTH2_PROXY_WHITELIST_DOMAINS: excalidraw.bizelevateai.com
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      OAUTH2_PROXY_UPSTREAMS: http://excalidraw-frontend:80
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+    expose: ["4180"]
+    networks: [edge, internal]
+    mem_limit: 64m
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    depends_on: [excalidraw-frontend]
+
+  excalidraw-room:
+    image: excalidraw-room:2026.11.09-node24
+    build:
+      context: ./room
+    container_name: excalidraw-room
+    expose: ["80"]
+    networks: [edge]
+    mem_limit: 128m
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  excalidraw-storage:
+    image: excalidraw-storage:2026.11.09-node24
+    build:
+      context: ./storage
+    container_name: excalidraw-storage
+    environment:
+      PORT: "8080"
+      GLOBAL_PREFIX: /api/v2
+      STORAGE_URI: redis://excalidraw-redis:6379
+      BODY_LIMIT: 50mb
+    expose: ["8080"]
+    networks: [edge, internal]
+    mem_limit: 192m
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    depends_on:
+      excalidraw-redis:
+        condition: service_healthy
+
+  excalidraw-redis:
+    image: redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
+    container_name: excalidraw-redis
+    # noeviction (the default): when full, writes fail instead of drawings being dropped
+    command: redis-server --appendonly yes --maxmemory 200mb --maxmemory-policy noeviction
+    volumes:
+      - redis-data:/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    mem_limit: 256m
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    name: excalidraw-redis-data
+
+networks:
+  edge:
+    external: true
+  internal:
+    name: excalidraw-internal
+    internal: true
