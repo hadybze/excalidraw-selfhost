@@ -34,3 +34,6 @@ deploy/oauth2-proxy.env
 # Pinned lockfiles for the self-hosted room and storage images
 !deploy/room/package-lock.json
 !deploy/storage/package-lock.json
+
+# rendered by the lead from Bitwarden (Google client secret, cookie secret)
+deploy/env/

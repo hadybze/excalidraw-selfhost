@@ -1,0 +1,5 @@
+# Excalidraw SPA behind Google sign-in (oauth2-proxy), moved from VPS2 to VPS-contabo.
+excalidraw.bizelevateai.com {
+	import common
+	reverse_proxy excalidraw-oauth2-proxy:4180
+}

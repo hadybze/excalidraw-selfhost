@@ -1,0 +1,7 @@
+# Excalidraw collab room (socket.io websocket). Never buffer: flush every write.
+excalidraw-collab.bizelevateai.com {
+	import common
+	reverse_proxy excalidraw-room:80 {
+		flush_interval -1
+	}
+}

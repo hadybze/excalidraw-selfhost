@@ -1,7 +1,7 @@
 # Collab room (excalidraw/excalidraw-room), built from upstream source on Node 24.
 # Upstream source is pinned by commit. package.json and package-lock.json here replace
 # upstream's (updated dependencies, npm instead of yarn). Upstream src/ is not patched.
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS build
 ARG ROOM_REF=03ff435860b508d7cd9e005cfc90f7977ae2a593
 RUN apk add --no-cache git
 WORKDIR /src
@@ -14,7 +14,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 RUN npm run build && npm prune --omit=dev
 
-FROM node:24-alpine
+FROM node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8
 ENV NODE_ENV=production
 WORKDIR /excalidraw-room
 COPY --from=build /src/package.json ./

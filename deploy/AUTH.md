@@ -65,6 +65,8 @@ python3 -c 'import secrets,base64; print(base64.urlsafe_b64encode(secrets.token_
 
 `deploy/oauth2-proxy.env` is gitignored — never commit it.
 
+On VPS-contabo (`docker-compose.contabo.yml`) the same three variables live in `deploy/env/oauth2-proxy.env`, rendered from Bitwarden (also gitignored). There Caddy, not Traefik, is the public entrypoint: `deploy/caddy/excalidraw.caddy` forwards to `excalidraw-oauth2-proxy:4180`.
+
 ## Deploy
 
 ```bash

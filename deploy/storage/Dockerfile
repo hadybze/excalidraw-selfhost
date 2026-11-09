@@ -1,7 +1,7 @@
 # HTTP storage backend (alswl/excalidraw-storage-backend), built from upstream source on Node 24.
 # Upstream source is pinned by commit. package.json and package-lock.json here replace
 # upstream's (NestJS 10, current dependencies, no axios). Upstream src/ is not patched.
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS build
 ARG STORAGE_REF=8e64f108b6c18bc3e7ddb7404199cf1a0ba8e602
 RUN apk add --no-cache git python3 make g++
 WORKDIR /app
@@ -16,7 +16,7 @@ RUN npm ci --no-audit --no-fund
 RUN npx jest storage.service raw-parser
 RUN npx nest build && npm prune --omit=dev
 
-FROM node:24-alpine
+FROM node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app/package.json ./

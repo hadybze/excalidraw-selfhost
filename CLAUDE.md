@@ -16,19 +16,21 @@ This is BizElevate's private fork of [excalidraw/excalidraw](https://github.com/
 The collab room and storage backend are built from pinned upstream commits, not pulled as images.
 
 - `deploy/room/` builds `excalidraw/excalidraw-room`, `deploy/storage/` builds `alswl/excalidraw-storage-backend`. Each has a Dockerfile (upstream commit in an ARG) plus its own `package.json` and `package-lock.json` that replace upstream's. Upstream `src/` is not patched.
-- Images are tagged `excalidraw-room:<date>-node24` and `excalidraw-storage:<date>-node24` in `deploy/docker-compose.yml`. To upgrade, bump the commit ARG, refresh the lockfile on Node 24, change the tag, then `docker compose build` and `up -d` for those two services (VPS deploy lock applies).
+- Images are tagged `excalidraw-room:<date>-node24` and `excalidraw-storage:<date>-node24` in `deploy/docker-compose.contabo.yml`; the `node:24-alpine` base is pinned by digest. To upgrade, bump the commit ARG, refresh the lockfile on Node 24 (`npm install --package-lock-only` in a `node:24-alpine` container), change the tag, then `docker compose build` and `up -d` for those two services. Stay on keyv 4 and @keyv/redis 2: later majors change how values are stored in Redis and old drawings would not load.
 - `deploy/room/smoke.cjs` joins two clients to a room and checks a broadcast arrives: `node smoke.cjs http://127.0.0.1:<port>`.
 - Do not run `redis-cli FLUSHALL`. Back up with `redis-cli SAVE` and copy the volume dump first.
 
 ## Deploy target
 
-Run `deploy/docker-compose.yml` on the BizElevate VPS (external Traefik network `root_default`). Public hosts:
+The stack runs on VPS-contabo from `deploy/docker-compose.contabo.yml` (moved from VPS2, which used `deploy/docker-compose.yml` behind Traefik; that file stays until VPS2 is retired). No ports are published: the server's `edge-caddy` reaches the containers by name on the external Docker network `edge`, with one site file per host in `deploy/caddy/` (copy them to the edge `sites/` folder; they `import common`). Redis is on the internal network only. Images are built on the server: `docker compose -f docker-compose.contabo.yml up -d --build`.
 
-- `excalidraw.bizelevateai.com` — oauth2-proxied SPA
-- `excalidraw-collab.bizelevateai.com` — excalidraw-room
-- `excalidraw-storage.bizelevateai.com` — HTTP storage backend
+- `excalidraw.bizelevateai.com` -> `excalidraw-oauth2-proxy:4180` (Google sign-in, then the SPA)
+- `excalidraw-collab.bizelevateai.com` -> `excalidraw-room:80` (websocket, `flush_interval -1`)
+- `excalidraw-storage.bizelevateai.com` -> `excalidraw-storage:8080` (Caddy answers CORS for the SPA origin only)
 
-Deploy steps are in `deploy/AUTH.md` and `deploy/STORAGE_API.md`.
+Secrets: `deploy/env/oauth2-proxy.env` (gitignored) holds `OAUTH2_PROXY_CLIENT_ID`, `OAUTH2_PROXY_CLIENT_SECRET` and `OAUTH2_PROXY_COOKIE_SECRET`; it is rendered from Bitwarden, never edited by hand. Google OAuth setup is in `deploy/AUTH.md`, the storage API in `deploy/STORAGE_API.md`.
+
+Redis data: Redis runs with `--appendonly yes`, so on start it reads only `appendonlydir/` and ignores a lone `dump.rdb` (the database comes up empty). To move data, copy the whole `/data` directory (AOF and RDB) with the writers stopped. To load only an RDB file, start Redis once with `--appendonly no`, run `redis-cli CONFIG SET appendonly yes`, wait for the rewrite to finish, then start normally. Both paths were tested from Redis 7.4 data into Redis 8.10.
 
 ## VITE_APP_* env vars (names only)
 
