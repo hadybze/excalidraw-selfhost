@@ -73,3 +73,8 @@ yarn fix                # lint + format auto-fix
 - Expect conflicts in `excalidraw-app/data/*` (Firebase adapter vs. HTTP storage), `Dockerfile`, and any file where upstream added new cloud dependencies.
 - Never merge upstream breaking changes without re-reading `deploy/AUTH.md` and `deploy/STORAGE_API.md` and re-testing the compose stack end-to-end.
 - After every upstream sync, verify `VITE_APP_HTTP_STORAGE_BACKEND_URL`, `VITE_APP_BACKEND_V2_GET_URL`, and `VITE_APP_BACKEND_V2_POST_URL` still point to `excalidraw-storage.bizelevateai.com`.
+
+## Upstream coding guidelines (from upstream AGENTS.md)
+
+- For new DOM/browser API usage, use `app.ownerDocument` and `app.ownerWindow` instead of globals; without `app`, derive them from the mounted node's `ownerDocument` and its `defaultView`.
+- When overriding properties of an existing type, prefer `Merge<Base, Overrides>` from `@excalidraw/common/utility-types` over `Omit<Base, keyof Overrides> & Overrides`.
