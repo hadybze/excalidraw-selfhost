@@ -12,7 +12,7 @@ Both forks share the same REST API contract. The frontend adapter was validated 
 All paths are prefixed by `VITE_APP_HTTP_STORAGE_BACKEND_URL` (e.g. `https://excalidraw-storage.bizelevateai.com`). The backend itself mounts routes under `/api/v2` by default via `GLOBAL_PREFIX`.
 
 | Resource | Method | Path | Body | Notes |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **Room scene** | `GET` | `/api/v2/rooms/:roomId` | — | Returns raw bytes: 4-byte big-endian scene version + IV (12 B) + AES-GCM ciphertext. |
 | **Room scene** | `PUT` | `/api/v2/rooms/:roomId` | raw bytes (same format as above) | Dumb blob store; optimistic concurrency handled client-side by comparing scene versions. |
 | **File blob** | `GET` | `/api/v2/files/:fileId` | — | Returns the encrypted/compressed file blob. |
@@ -25,7 +25,7 @@ All paths are prefixed by `VITE_APP_HTTP_STORAGE_BACKEND_URL` (e.g. `https://exc
 ## Required Backend Environment Variables
 
 | Variable | Description | Default |
-|---|---|---|
+| --- | --- | --- |
 | `PORT` | HTTP server listening port | `8080` |
 | `GLOBAL_PREFIX` | API route prefix | `/api/v2` |
 | `STORAGE_URI` | Keyv connection string (e.g. `redis://host:6379`). Empty string = in-memory (non-persistent). | `""` |
