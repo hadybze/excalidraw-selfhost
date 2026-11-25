@@ -34,7 +34,7 @@ Public hosts:
 
 Deploy steps are in `deploy/AUTH.md` and `deploy/STORAGE_API.md`.
 
-## VITE_APP_* env vars (names only)
+## `VITE_APP_*` env vars (names only)
 
 From tracked `.env.development` / `.env.production`:
 
