@@ -23,6 +23,7 @@ import type {
 } from "@excalidraw/excalidraw/types";
 
 import { getSyncableElements } from ".";
+
 import type { SyncableExcalidrawElement } from ".";
 import type Portal from "../collab/Portal";
 import type { Socket } from "socket.io-client";
@@ -195,9 +196,7 @@ export const loadFromHttpStorage = async (
   roomKey: string,
   socket: Socket | null,
 ): Promise<readonly SyncableExcalidrawElement[] | null> => {
-  const response = await fetch(
-    `${HTTP_STORAGE_BACKEND_URL}/rooms/${roomId}`,
-  );
+  const response = await fetch(`${HTTP_STORAGE_BACKEND_URL}/rooms/${roomId}`);
 
   if (!response.ok) {
     return null;
@@ -236,9 +235,7 @@ export const loadFilesFromHttpStorage = async (
   await Promise.all(
     [...new Set(filesIds)].map(async (id) => {
       try {
-        const response = await fetch(
-          `${HTTP_STORAGE_BACKEND_URL}/files/${id}`,
-        );
+        const response = await fetch(`${HTTP_STORAGE_BACKEND_URL}/files/${id}`);
         if (response.status < 400) {
           const arrayBuffer = await response.arrayBuffer();
 
@@ -319,7 +316,10 @@ const saveElementsToBackend = async (
   );
   payload.set(new Uint8Array(numberBuffer), 0);
   payload.set(iv, numberBuffer.byteLength);
-  payload.set(new Uint8Array(ciphertext), numberBuffer.byteLength + iv.byteLength);
+  payload.set(
+    new Uint8Array(ciphertext),
+    numberBuffer.byteLength + iv.byteLength,
+  );
 
   const putResponse = await fetch(
     `${HTTP_STORAGE_BACKEND_URL}/rooms/${roomId}`,
