@@ -11,7 +11,7 @@ services:
     build:
       context: ./mini
       dockerfile: Dockerfile.frontend-static
-    image: excalidraw-frontend-static:20261107
+    image: excalidraw-frontend-static:20261125-nginx
     expose: ["80"]
     mem_limit: 64m
     restart: unless-stopped
