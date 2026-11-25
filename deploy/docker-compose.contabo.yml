@@ -11,7 +11,7 @@ name: excalidraw
 
 services:
   excalidraw-frontend:
-    image: excalidraw-frontend:2026.11.09
+    image: excalidraw-frontend:2026.11.25-nginx
     build:
       context: ..
       dockerfile: Dockerfile
